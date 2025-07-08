@@ -3,4 +3,12 @@ name = "nonmaxunsigned"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+
+default = ["checked-ops"]
+
+checked-ops = []
+
 [dependencies]
+
+
