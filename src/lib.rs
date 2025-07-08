@@ -1,9 +1,4 @@
-//! A create providing nonmax integer types
-//!
-//! TODO Example
-//!
-//! TODO compare to existing crates
-
+#![doc = include_str!("../README.md")]
 #![no_std]
 #![deny(missing_docs)]
 
