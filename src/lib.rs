@@ -109,7 +109,7 @@ macro_rules! forward_ref_op_assign {
 }
 
 macro_rules! impl_binop {
-    (impl $imp:ident, $method:ident, $type:ty) => {
+    (impl $imp:ident, $method:ident, $type:ty, $primitive:ty) => {
         impl $imp for $type {
             type Output = $type;
 
@@ -127,21 +127,47 @@ macro_rules! impl_binop {
                 }
             }
         }
+
+        impl $imp<$primitive> for $type {
+            type Output = $type;
+
+            fn $method(self, other: $primitive) -> $type {
+                let primitive = self.get().add(other);
+                match Self::new(primitive) {
+                    Some(res) => res,
+                    None => panic!(
+                        "{}::{} resulted in forbidden max value({}). Use `checked_{}` instead",
+                        stringify!($type),
+                        stringify!($method),
+                        Self::INVALID_UNDERLYING,
+                        stringify!($method),
+                    )
+                }
+            }
+        }
+
         forward_ref_binop!(impl $imp, $method for $type, $type);
+        forward_ref_binop!(impl $imp, $method for $type, $primitive);
     };
 }
 
 macro_rules! impl_assign_op {
-    (impl $imp:ident, $method:ident, $binop:ident, $op:ident, $type:ty) => {
-        impl $imp for $type
-        where
-            $type: $binop,
+    (impl $imp:ident, $method:ident, $binop:ident, $op:ident, $type:ty, $primitive:ty) => {
+        impl $imp for $type where $type: $binop,
         {
             fn $method(&mut self, other: $type) {
                 *self = self.$op(other)
             }
         }
+
+        impl $imp<$primitive> for $type where $type: $binop<$primitive> {
+            fn $method(&mut self, other: $primitive) {
+                *self = self.$op(other)
+            }
+        }
+
         forward_ref_op_assign!(impl $imp, $method for $type, $type);
+        forward_ref_op_assign!(impl $imp, $method for $type, $primitive);
     };
 }
 
@@ -460,24 +486,24 @@ macro_rules! non_max_impl {
             }
         }
 
-        impl_binop!(impl Add, add, $type);
-        impl_binop!(impl Sub, sub, $type);
-        impl_binop!(impl Mul, mul, $type);
-        impl_binop!(impl Div, div, $type);
+        impl_binop!(impl Add, add, $type, $primitive);
+        impl_binop!(impl Sub, sub, $type, $primitive);
+        impl_binop!(impl Mul, mul, $type, $primitive);
+        impl_binop!(impl Div, div, $type, $primitive);
 
-        impl_binop!(impl BitAnd, bitand, $type);
-        impl_binop!(impl BitOr, bitor, $type);
-        impl_binop!(impl BitXor, bitxor, $type);
+        impl_binop!(impl BitAnd, bitand, $type, $primitive);
+        impl_binop!(impl BitOr, bitor, $type, $primitive);
+        impl_binop!(impl BitXor, bitxor, $type, $primitive);
 
-        impl_assign_op!(impl AddAssign, add_assign, Add, add, $type);
-        impl_assign_op!(impl SubAssign, sub_assign, Sub, sub, $type);
-        impl_assign_op!(impl MulAssign, mul_assign, Mul, mul, $type);
-        impl_assign_op!(impl DivAssign, div_assign, Div, div, $type);
+        impl_assign_op!(impl AddAssign, add_assign, Add, add, $type, $primitive);
+        impl_assign_op!(impl SubAssign, sub_assign, Sub, sub, $type, $primitive);
+        impl_assign_op!(impl MulAssign, mul_assign, Mul, mul, $type, $primitive);
+        impl_assign_op!(impl DivAssign, div_assign, Div, div, $type, $primitive);
 
 
-        impl_assign_op!(impl BitAndAssign, bitand_assign, BitAnd, bitand, $type);
-        impl_assign_op!(impl BitOrAssign, bitor_assign, BitOr, bitor, $type);
-        impl_assign_op!(impl BitXorAssign, bitxor_assign, BitXor, bitxor, $type);
+        impl_assign_op!(impl BitAndAssign, bitand_assign, BitAnd, bitand, $type, $primitive);
+        impl_assign_op!(impl BitOrAssign, bitor_assign, BitOr, bitor, $type, $primitive);
+        impl_assign_op!(impl BitXorAssign, bitxor_assign, BitXor, bitxor, $type, $primitive);
 
         impl TryFrom<$primitive> for $type {
             type Error = PrimitiveIsMaxError<$primitive>;
