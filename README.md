@@ -1,5 +1,9 @@
 # NonMax-Unsigned
 
+![Crates.io](https://img.shields.io/crates/v/nonmaxunsigned.svg)](https://crates.io/crates/nonmaxunsigned)
+[![Documentation](https://docs.rs/nonmaxunsigned/badge.svg)](https://docs.rs/nonmaxunsigned/)
+[![Dependency status](https://deps.rs/repo/github/Wasabi375/nonmaxunsigned/status.svg)](https://deps.rs/repo/github/Wasabi375/nonmaxunsigned)
+
 This crate provides an implementation for non-max integer types
 with [null-pointer-optimization].
 
