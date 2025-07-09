@@ -8,7 +8,7 @@ repository = "https://github.com/Wasabi375/nonmaxunsigned"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 keywords = ["nonmax", "non-max", "niche", "option", "no-std"]
-rust-version = "1.85"
+rust-version = "1.87"   # also update in .github/workflow/check.yml msrv
 
 
 [features]
