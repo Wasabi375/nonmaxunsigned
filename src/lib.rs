@@ -512,16 +512,6 @@ macro_rules! non_max_impl {
                 }
             }
 
-            /// Returns the number of ones in the binary representation of `self`.
-            pub const fn count_ones(self) -> u32 {
-                self.get().count_ones()
-            }
-
-            /// Returns the number of zeros in the binary representation of `self`.
-            pub const fn count_zeros(self) -> u32 {
-                self.get().count_zeros()
-            }
-
             #[cfg(feature = "checked-ops")]
             checked_ops!($type);
 
