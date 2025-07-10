@@ -27,4 +27,5 @@ pre-release-replacements = [
   {file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}"},
   {file="CHANGELOG.md", search="<!-- next-header -->", replace="<!-- next-header -->\n\n## [Unreleased] - ReleaseDate", exactly=1},
   {file="CHANGELOG.md", search="<!-- next-url -->", replace="<!-- next-url -->\n[Unreleased]: https://github.com/wasabi375/nonmaxunsigned/compare/{{tag_name}}...HEAD", exactly=1},
+  {file="README.md", search="https://docs.rs/nonmaxunsigned/0.1.0", replace="https://docs.rs/nonmaxunsigned/{{version}}", exactly=1},
 ]
