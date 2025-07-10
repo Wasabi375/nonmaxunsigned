@@ -114,7 +114,7 @@ macro_rules! impl_binop {
             type Output = $type;
 
             fn $method(self, other: $type) -> $type {
-                let primitive = self.get().add(other.get());
+                let primitive = self.get().$method(other.get());
                 match Self::new(primitive) {
                     Some(res) => res,
                     None => panic!(
@@ -132,7 +132,7 @@ macro_rules! impl_binop {
             type Output = $type;
 
             fn $method(self, other: $primitive) -> $type {
-                let primitive = self.get().add(other);
+                let primitive = self.get().$method(other);
                 match Self::new(primitive) {
                     Some(res) => res,
                     None => panic!(
