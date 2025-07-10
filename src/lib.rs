@@ -7,58 +7,50 @@ use core::ops::{
     Mul, MulAssign, Sub, SubAssign,
 };
 
-/// U7 is a nonmax version of [u8]
+/// NonMaxU8 is a nonmax version of [u8]
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 #[allow(dead_code)]
-pub struct U7(U7Internal);
+pub struct NonMaxU8(NonMaxU8Internal);
 
-/// U15 is a nonmax version of [u16]
+/// NonMaxU16 is a nonmax version of [u16]
 #[derive(Clone, Copy)]
 #[repr(C)]
 #[allow(dead_code)]
 #[cfg(target_endian = "little")]
-pub struct U15(U7, u8);
-/// U15 is a nonmax version of [u16]
+pub struct NonMaxU16(NonMaxU8, u8);
+/// NonMaxU16 is a nonmax version of [u16]
 #[cfg(target_endian = "big")]
 #[derive(Clone, Copy)]
 #[repr(C)]
 #[allow(dead_code)]
-pub struct U15(u8, U7);
+pub struct NonMaxU16(u8, NonMaxU8);
 
-/// U31 is a nonmax version of [u32]
+/// NonMaxU32 is a nonmax version of [u32]
 #[derive(Clone, Copy)]
 #[repr(C)]
 #[allow(dead_code)]
 #[cfg(target_endian = "little")]
-pub struct U31(U7, u8, u16);
-/// U31 is a nonmax version of [u32]
+pub struct NonMaxU32(NonMaxU8, u8, u16);
+/// NonMaxU32 is a nonmax version of [u32]
 #[derive(Clone, Copy)]
 #[repr(C)]
 #[allow(dead_code)]
 #[cfg(target_endian = "big")]
-pub struct U31(u16, u8, U7);
+pub struct NonMaxU32(u16, u8, NonMaxU8);
 
-/// U63 is a nonmax version of [u64]
+/// NonMaxU64 is a nonmax version of [u64]
 #[derive(Clone, Copy)]
 #[repr(C)]
 #[allow(dead_code)]
 #[cfg(target_endian = "little")]
-pub struct U63(U7, u8, u16, u32);
-/// U63 is a nonmax version of [u64]
+pub struct NonMaxU64(NonMaxU8, u8, u16, u32);
+/// NonMaxU64 is a nonmax version of [u64]
 #[derive(Clone, Copy)]
 #[repr(C)]
 #[allow(dead_code)]
 #[cfg(target_endian = "big")]
-pub struct U63(u32, u16, u8, U7);
-
-// TODO: when I implement simple_endian crate I should look into whether
-// it is even valid to store U7 as a big endian on a little endian system.
-// It should also always be invalid to store U15 as big on little endian
-// as the U7 is then covered by a u8 value
-//
-// Possible fix is to use MaybeUninit but that would probably require a change
-// to the simple_endian crate
+pub struct NonMaxU64(u32, u16, u8, NonMaxU8);
 
 // NOTE: copy past from rust-lang: https://github.com/rust-lang/rust/blob/ab68b0fb26485ab1fa6977b2d8b59cc8a171c4aa/library/core/src/internal_macros.rs
 macro_rules! forward_ref_binop {
@@ -534,7 +526,7 @@ macro_rules! non_max_impl {
 
 /// Error type returned by [TryFrom] from primitive integer into nonmax versions
 ///
-/// See [U7], [U15], [U31], [U63]
+/// See [NonMaxU8], [NonMaxU16], [NonMaxU32], [NonMaxU64]
 #[derive(Debug, Clone, Copy)]
 pub struct PrimitiveIsMaxError<T>(pub T);
 
@@ -546,15 +538,15 @@ impl<T: core::fmt::Display> core::fmt::Display for PrimitiveIsMaxError<T> {
 
 impl<T: core::fmt::Display + core::fmt::Debug> core::error::Error for PrimitiveIsMaxError<T> {}
 
-non_max_impl!(U7, u8, u7_test);
-non_max_impl!(U15, u16, u15_test);
-non_max_impl!(U31, u32, u31_test);
-non_max_impl!(U63, u64, u63_test);
+non_max_impl!(NonMaxU8, u8, u8_test);
+non_max_impl!(NonMaxU16, u16, u16_test);
+non_max_impl!(NonMaxU32, u32, u32_test);
+non_max_impl!(NonMaxU64, u64, u64_test);
 
 #[repr(u8)]
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug)]
-enum U7Internal {
+enum NonMaxU8Internal {
     V0 = 0,
     V1 = 1,
     V2 = 2,
@@ -819,21 +811,21 @@ mod internal_tests {
 
     #[test]
     fn u7_internal_sizes() {
-        assert_eq!(1, size_of::<U7Internal>());
-        assert_eq!(1, size_of::<Option<U7Internal>>());
+        assert_eq!(1, size_of::<NonMaxU8Internal>());
+        assert_eq!(1, size_of::<Option<NonMaxU8Internal>>());
     }
 
     #[test]
     fn u7_max() {
-        assert_eq!(U7Internal::V254 as u8, u8::MAX - 1);
+        assert_eq!(NonMaxU8Internal::V254 as u8, u8::MAX - 1);
     }
 
     #[test]
     fn endianness_u15() {
         #[cfg(target_endian = "little")]
-        let max = U15(U7(U7Internal::V254), u8::MAX);
+        let max = NonMaxU16(NonMaxU8(NonMaxU8Internal::V254), u8::MAX);
         #[cfg(target_endian = "big")]
-        let max = U15(u8::MAX, U7(U7Internal::V254));
+        let max = NonMaxU16(u8::MAX, NonMaxU8(NonMaxU8Internal::V254));
 
         assert_eq!(
             max.get(),
@@ -842,15 +834,15 @@ mod internal_tests {
             max.get(),
             u16::MAX - 1
         );
-        assert_eq!(max, U15::MAX);
+        assert_eq!(max, NonMaxU16::MAX);
     }
 
     #[test]
     fn endianness_u31() {
         #[cfg(target_endian = "little")]
-        let max = U31(U7(U7Internal::V254), u8::MAX, u16::MAX);
+        let max = NonMaxU32(NonMaxU8(NonMaxU8Internal::V254), u8::MAX, u16::MAX);
         #[cfg(target_endian = "big")]
-        let max = U31(u16::MAX, u8::MAX, U7(U7Internal::V254));
+        let max = NonMaxU32(u16::MAX, u8::MAX, NonMaxU8(NonMaxU8Internal::V254));
 
         assert_eq!(
             max.get(),
@@ -859,15 +851,25 @@ mod internal_tests {
             max.get(),
             u16::MAX - 1
         );
-        assert_eq!(max, U31::MAX);
+        assert_eq!(max, NonMaxU32::MAX);
     }
 
     #[test]
     fn endianness_u63() {
         #[cfg(target_endian = "little")]
-        let max = U63(U7(U7Internal::V254), u8::MAX, u16::MAX, u32::MAX);
+        let max = NonMaxU64(
+            NonMaxU8(NonMaxU8Internal::V254),
+            u8::MAX,
+            u16::MAX,
+            u32::MAX,
+        );
         #[cfg(target_endian = "big")]
-        let max = U15(u32::MAX, u16::MAX, u8::MAX, U7(U7Internal::V254));
+        let max = NonMaxU16(
+            u32::MAX,
+            u16::MAX,
+            u8::MAX,
+            NonMaxU8(NonMaxU8Internal::V254),
+        );
 
         assert_eq!(
             max.get(),
@@ -876,6 +878,6 @@ mod internal_tests {
             max.get(),
             u16::MAX - 1
         );
-        assert_eq!(max, U63::MAX);
+        assert_eq!(max, NonMaxU64::MAX);
     }
 }

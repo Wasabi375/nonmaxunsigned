@@ -12,14 +12,14 @@ This crate is usable in a `no-std` environment.
 ## Example
 
 ```rust
-use nonmaxunsigned::U7;
+use nonmaxunsigned::NonMaxU8;
 
 fn main() {
-    let a = U7::new(5).unwrap();
-    let b = U7::new(12).unwrap();
+    let a = NonMaxU8::new(5).unwrap();
+    let b = NonMaxU8::new(12).unwrap();
 
-    assert_eq!(U7::new(17).unwrap(), a + b);
-    assert_eq!(None, U7::new(u8::MAX));
+    assert_eq!(NonMaxU8::new(17).unwrap(), a + b);
+    assert_eq!(None, NonMaxU8::new(u8::MAX));
 }
 ```
 
@@ -35,7 +35,7 @@ Unlike those crates this implementation does not [NonZero](https://doc.rust-lang
 Those crates store the value as `value ^ max` which is never `0` as long as `value != max`.
 However this means the binary/hex representation of the stored value is hard to parse.
 
-This implementation instead relies on a large enum `U7Internal` which has 254 variants.
+This implementation instead relies on a large enum `NonMaxU8Internal` which has 254 variants.
 Such an enum also leads to [null-pointer-optimization] but does not require the xor trick
 to prevent 0 values.
 Instead it relies on `core::mem::transmute_copy`.
