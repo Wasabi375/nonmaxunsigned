@@ -197,17 +197,17 @@ macro_rules! checked_ops {
             doc = "Checked integer multiplication. Computes `self * rhs`, returning `None` if overflow occured."
         );
         option_op!($type, checked_div,
-            doc = "Checked integer division. Computes `self / rhs`, returning `None` if overflow occured."
+            doc = "Checked integer division. Computes `self / rhs`, returning `None` if `rhs == 0`."
         );
         option_op!($type, checked_div_euclid,
-            doc = "Checked Euclidean division. Computes `self.div_euclid(rhs)`, returning `None` if overflow occured."
+            doc = "Checked Euclidean division. Computes `self.div_euclid(rhs)`, returning `None` if `rhs == 0`."
             doc = ""
             doc = "Strict division on unsigned types is just normal division. There’s no way overflow could ever happen."
             doc = "This function exists so that all operations are accounted for in the strict operations."
             doc = "Since, for the positive integers, all common definitions of division are equal, this is exactly equal to self.strict_div(rhs)."
         );
         option_op!($type, checked_rem,
-            doc = "Checked integer division. Computes `self % rhs`, returning `None` if overflow occured."
+            doc = "Checked integer division. Computes `self % rhs`, returning `None` if `rhs == 0`."
         );
 
         #[doc = "Checked integer division. Computes `self << rhs`, returning `None` if overflow occured."]
