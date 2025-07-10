@@ -210,7 +210,7 @@ macro_rules! checked_ops {
             doc = "Checked integer division. Computes `self % rhs`, returning `None` if `rhs == 0`."
         );
 
-        #[doc = "Checked integer division. Computes `self << rhs`, returning `None` if overflow occured."]
+        #[doc = "Checked integer division. Computes `self << rhs`, returning `None` if `rhs` is larger than or equal to the number of bits in `self`."]
         pub const fn checked_shl(self, rhs:u32) -> Option<$type>{
             match self.get().checked_shl(rhs){
                 Some(primitive) =>  <$type>::new(primitive),
@@ -218,7 +218,7 @@ macro_rules! checked_ops {
             }
         }
 
-        #[doc = "Checked integer division. Computes `self >> rhs`, returning `None` if overflow occured."]
+        #[doc = "Checked integer division. Computes `self >> rhs`, returning `None` if `rhs` is larger than or equal to the number of bits in `self`."]
         pub const fn checked_shr(self, rhs:u32) -> Option<$type>{
             match self.get().checked_shr(rhs){
                 Some(primitive) =>  <$type>::new(primitive),
