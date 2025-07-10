@@ -477,7 +477,7 @@ macro_rules! non_max_impl {
             /// This method might not be optimized owing to implementation details;
             /// `ilog2` can produce results more efficiently for base 2, and `ilog10` can produce results more efficiently for base 10.
             ///
-            /// #Panics
+            /// # Panics
             ///
             /// This function will panic if self is zero, or if base is less than 2.
             pub const fn ilog(self, base: Self) -> u32 {
