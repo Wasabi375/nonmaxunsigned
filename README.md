@@ -1,7 +1,7 @@
 # NonMax-Unsigned
 
 [![Crates.io](https://img.shields.io/crates/v/nonmaxunsigned.svg)](https://crates.io/crates/nonmaxunsigned)
-[![docs.rs](https://img.shields.io/docsrs/nonmaxunsigned)](https://docs.rs/nonmaxunsigned/0.1.0)
+[![docs.rs](https://img.shields.io/docsrs/nonmaxunsigned)](https://docs.rs/nonmaxunsigned/1.0.0)
 [![Dependency status](https://deps.rs/repo/github/Wasabi375/nonmaxunsigned/status.svg)](https://deps.rs/repo/github/Wasabi375/nonmaxunsigned)
 
 This crate provides an implementation for non-max integer types
