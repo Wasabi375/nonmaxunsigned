@@ -244,6 +244,108 @@ macro_rules! checked_ops {
     };
 }
 
+#[cfg(test)]
+macro_rules! test_binop {
+    ($op:ident for $type:ty, $primitive:ty => $(($a:expr, $b:expr; $res:expr)),+ access: $access:tt) => {
+        #[test]
+        fn $op() {
+            $(
+                assert_eq!(
+                    $access(<$type>::new($a).unwrap().$op(<$type>::new($b).unwrap())),
+                    ($a as $primitive).$op($b as $primitive),
+                    "NonMax op matches primitive op"
+                );
+                assert_eq!(
+                    $access(<$type>::new($a).unwrap().$op(<$type>::new($b).unwrap())),
+                    $res,
+                    "NonMax op has expected result"
+                );
+                assert_eq!(
+                    ($a as $primitive).$op($b as $primitive),
+                    $res,
+                    "primitive op has expected result"
+                );
+            )+
+        }
+    };
+    ($op:ident for $type:ty, $primitive:ty => $(($a:expr, $b:expr; $res:expr)),+) => {
+        test_binop!($op for $type, $primitive => $(($a, $b; $res)),+ access: (|v| { <$type>::get(v) }));
+    };
+    (direct $op:ident for $type:ty, $primitive:ty => $(($a:expr, $b:expr; $res:expr)),+) => {
+        test_binop!($op for $type, $primitive => $(($a, $b; $res)),+ access: (|v| { v }));
+    };
+    (option $op:ident for $type:ty, $primitive:ty => $(($a:expr, $b:expr; $res:expr)),+) => {
+        test_binop!($op for $type, $primitive => $(($a, $b; $res)),+ access: (|v| { Option::map(v, |v| { <$type>::get(v) }) }));
+    };
+    (checked $op:ident for $type:ty, $primitive:ty => $(($a:expr, $b:expr; $res:expr)),+) => {
+        #[test]
+        fn $op() {
+            $(
+                {
+                    let primitive_res: Option<$primitive> = ($a as $primitive).$op($b as $primitive);
+                    let primitive_res = primitive_res
+                        .map(|v| <$type>::new(v))
+                        .flatten()
+                        .map(|v| <$type>::get(v));
+                    assert_eq!(
+                        Option::map(<$type>::new($a).unwrap().$op(<$type>::new($b).unwrap()), |v| { <$type>::get(v) }),
+                        primitive_res,
+                        "NonMax op matches primitive op"
+                    );
+                    assert_eq!(
+                        Option::map(<$type>::new($a).unwrap().$op(<$type>::new($b).unwrap()), |v| { v.get() }),
+                        $res,
+                        "NonMax op has expected result"
+                    );
+                    assert_eq!(
+                        primitive_res,
+                        $res,
+                        "primitive op has expected result"
+                    );
+                }
+            )+
+        }
+
+    };
+}
+
+#[cfg(test)]
+macro_rules! test_unop {
+    ($op:ident for $type:ty, $primitive:ty => $(($a:expr; $res:expr)),+ access: $access:tt) => {
+        #[test]
+        fn $op() {
+            $(
+                assert_eq!(
+                    $access(<$type>::new($a).unwrap().$op()),
+                    ($a as $primitive).$op(),
+                    "NonMax op matches primitive op"
+                );
+                assert_eq!(
+                    $access(<$type>::new($a).unwrap().$op()),
+                    $res,
+                    "NonMax op has expected result"
+                );
+                assert_eq!(
+                    ($a as $primitive).$op(),
+                    $res,
+                    "primitive op has expected result"
+                );
+
+            )+
+        }
+    };
+    ($op:ident for $type:ty, $primitive:ty => $(($a:expr; $res:expr)),+ access: $access:tt) => {
+        test_unop!($op for $type, $primitive =>  $(($a; $res)),+ access: (|v| { <$type>::get(v) }));
+    };
+    (direct $op:ident for $type:ty, $primitive:ty => $(($a:expr; $res:expr)),+) => {
+        test_unop!($op for $type, $primitive => $(($a; $res)),+ access: (|v| { v }));
+    };
+    (option $op:ident for $type:ty, $primitive:ty => $(($a:expr; $res:expr)),+) => {
+        test_unop!($op for $type, $primitive => $(($a; $res)),+ access: (|v| { Option::map(v, |v| { <$type>::get(v) }) }));
+    };
+
+}
+
 macro_rules! non_max_impl {
     ($type:ty, $primitive:ty, $test_name:ident) => {
         impl $type {
@@ -260,16 +362,19 @@ macro_rules! non_max_impl {
                 Self::new_unchecked(<$primitive>::MAX - 1)
             };
 
+
             /// The size of this integer type in bits
             pub const BITS: u32 = <$primitive>::BITS - 1;
 
             /// The size of the underlying interger type in bits
-            ///
             #[doc = concat!("This is the same as `BITS` on the result type of [Self::get] ([", stringify!($primitive), "])")]
-            pub const PRIMITIVE_BITS: u32 = <$primitive>::BITS;
+            pub const BITS_UNDERLYING: u32 = <$primitive>::BITS;
 
             /// The value of the underlying integer that can *not* be represented
             pub const INVALID_UNDERLYING: $primitive = <$primitive>::MAX;
+
+            /// The maximum value that can be safely converted into [Self]
+            pub const MAX_UNDERLYING: $primitive = <$primitive>::MAX - 1;
 
             /// Create a new [Self] or `None` if value is the max of the underlying integer type
             pub const fn new(value: $primitive) -> Option<Self> {
@@ -519,6 +624,157 @@ macro_rules! non_max_impl {
             fn size() {
                 assert_eq!(size_of::<$type>(), size_of::<$primitive>());
                 assert_eq!(size_of::<Option<$type>>(), size_of::<$primitive>());
+            }
+
+            test_binop!(abs_diff for $type, $primitive => (10, 5; 5), (15, 25; 10));
+            test_binop!(div_ceil for $type, $primitive => (10, 5; 2), (12, 7; 2));
+
+            test_unop!(direct is_power_of_two for $type, $primitive => (8; true), (42; false));
+            test_unop!(option checked_next_power_of_two for $type, $primitive => (8; Some(8)), (42; Some(64)), (<$type>::MAX_UNDERLYING; None));
+
+            test_binop!(direct is_multiple_of for $type, $primitive => (10, 5; true), (42, 11; false));
+            test_binop!(checked checked_next_multiple_of for $type, $primitive => (8, 4; Some(8)), (42, 16; Some(48)), (<$type>::MAX_UNDERLYING, 5; None));
+
+            test_binop!(midpoint for $type, $primitive => (10, 0; 5));
+
+            test_binop!(direct ilog for $type, $primitive => (10, 10; 1), (243, 3; 5), (250, 3; 5));
+            test_unop!(direct ilog2 for $type, $primitive => (128; 7), (130; 7));
+            test_unop!(direct ilog10 for $type, $primitive => (10; 1), (100; 2), (105; 2));
+
+            test_binop!(checked checked_add for $type, $primitive => (10, 20; Some(30)), (<$type>::MAX_UNDERLYING, 1; None), (<$type>::MAX_UNDERLYING, 5; None));
+            test_binop!(checked checked_mul for $type, $primitive => (10, 5; Some(50)), (<$type>::INVALID_UNDERLYING / 5, 5; None), (<$type>::MAX_UNDERLYING, 2; None));
+            test_binop!(checked checked_div for $type, $primitive => (10, 5; Some(2)), (10, 0; None));
+            test_binop!(checked checked_div_euclid for $type, $primitive => (10, 5; Some(2)), (10, 0; None));
+            test_binop!(checked checked_sub for $type, $primitive => (10, 5; Some(5)), (5, 10; None), (22, 22; Some(0)));
+            test_binop!(checked checked_rem for $type, $primitive => (10, 5; Some(0)), (11, 5; Some(1)), (10, 0; None));
+
+            test_binop!(direct checked_ilog for $type, $primitive => (10, 10; Some(1)), (243, 3; Some(5)), (250, 3; Some(5)), (42, 1; None), (0, 4; None));
+            test_unop!(direct checked_ilog2 for $type, $primitive => (128; Some(7)), (130; Some(7)), (0; None));
+            test_unop!(direct checked_ilog10 for $type, $primitive => (10; Some(1)), (100; Some(2)), (105; Some(2)), (0; None));
+
+            test_binop!(add for $type, $primitive => (12, 30; 42));
+            test_binop!(sub for $type, $primitive => (30, 12; 18));
+            test_binop!(mul for $type, $primitive => (5, 12; 60));
+            test_binop!(div for $type, $primitive => (120, 8; 15));
+
+            test_binop!(bitor for $type, $primitive => (0b01010, 0b1; 0b01011));
+            test_binop!(bitand for $type, $primitive => (0b01010, 0b11; 0b10));
+            test_binop!(bitxor for $type, $primitive => (0b01010, 0b11; 0b01001));
+
+            #[test]
+            fn checked_shl() {
+                {
+                    let primitive_res: Option<$primitive> = (0b10 as $primitive).checked_shl(2);
+                    let primitive_res = primitive_res
+                        .map(|v| <$type>::new(v))
+                        .flatten()
+                        .map(|v| <$type>::get(v));
+                    assert_eq!(
+                        Option::map(<$type>::new(0b10).unwrap().checked_shl(2), |v| {
+                            <$type>::get(v)
+                        }),
+                        primitive_res,
+                        "NonMax op matches primitive op"
+                    );
+                    assert_eq!(
+                        Option::map(<$type>::new(0b10).unwrap().checked_shl(2), |v| {
+                            v.get()
+                        }),
+                        (Some(0b1000)),
+                        "NonMax op has expected result"
+                    );
+                    assert_eq!(
+                        primitive_res,
+                        (Some(0b1000)),
+                        "primitive op has expected result"
+                    );
+                }
+                {
+                    let primitive_res: Option<$primitive> = (25 as $primitive).checked_shl(<$type>::BITS_UNDERLYING);
+                    let primitive_res = primitive_res
+                        .map(|v| <$type>::new(v))
+                        .flatten()
+                        .map(|v| <$type>::get(v));
+                    assert_eq!(
+                        Option::map(
+                            <$type>::new(25)
+                                .unwrap()
+                                .checked_shl(<$type>::BITS_UNDERLYING),
+                            |v| { <$type>::get(v) }
+                        ),
+                        primitive_res,
+                        "NonMax op matches primitive op"
+                    );
+                    assert_eq!(
+                        Option::map(
+                            <$type>::new(25)
+                                .unwrap()
+                                .checked_shl(<$type>::BITS_UNDERLYING),
+                            |v| { v.get() }
+                        ),
+                        None,
+                        "NonMax op has expected result"
+                    );
+                    assert_eq!(primitive_res, None, "primitive op has expected result");
+                }
+            }
+
+            #[test]
+            fn checked_shr() {
+                {
+                    let primitive_res: Option<$primitive> = (0b1000 as $primitive).checked_shr(2);
+                    let primitive_res = primitive_res
+                        .map(|v| <$type>::new(v))
+                        .flatten()
+                        .map(|v| <$type>::get(v));
+                    assert_eq!(
+                        Option::map(<$type>::new(0b1000).unwrap().checked_shr(2), |v| {
+                            <$type>::get(v)
+                        }),
+                        primitive_res,
+                        "NonMax op matches primitive op"
+                    );
+                    assert_eq!(
+                        Option::map(<$type>::new(0b1000).unwrap().checked_shr(2), |v| {
+                            v.get()
+                        }),
+                        (Some(0b10)),
+                        "NonMax op has expected result"
+                    );
+                    assert_eq!(
+                        primitive_res,
+                        (Some(0b10)),
+                        "primitive op has expected result"
+                    );
+                }
+                {
+                    let primitive_res: Option<$primitive> = (25 as $primitive).checked_shr(<$type>::BITS_UNDERLYING);
+                    let primitive_res = primitive_res
+                        .map(|v| <$type>::new(v))
+                        .flatten()
+                        .map(|v| <$type>::get(v));
+                    assert_eq!(
+                        Option::map(
+                            <$type>::new(25)
+                                .unwrap()
+                                .checked_shr(<$type>::BITS_UNDERLYING),
+                            |v| { <$type>::get(v) }
+                        ),
+                        primitive_res,
+                        "NonMax op matches primitive op"
+                    );
+                    assert_eq!(
+                        Option::map(
+                            <$type>::new(25)
+                                .unwrap()
+                                .checked_shr(<$type>::BITS_UNDERLYING),
+                            |v| { v.get() }
+                        ),
+                        None,
+                        "NonMax op has expected result"
+                    );
+                    assert_eq!(primitive_res, None, "primitive op has expected result");
+                }
             }
         }
     };
