@@ -2,6 +2,17 @@
 
 ## [Unreleased] - ReleaseDate
 
+## Changes
+
+* Renamed `U7`, etc to `NonMaxU8`
+* Implemented exhaustive test suite
+
+## Fixes
+
+* Fixed all binary-operations implemented via trait, e.g. Sub, Mul, etc
+    only add was correct
+* minor fixes to documentation
+
 ## [0.1.0] - 2025-07-09
 
 ## Features
