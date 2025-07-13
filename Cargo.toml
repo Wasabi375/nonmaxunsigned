@@ -8,7 +8,7 @@ repository = "https://github.com/Wasabi375/nonmaxunsigned"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 keywords = ["nonmax", "non-max", "niche", "option", "no-std"]
-rust-version = "1.87"   # also update in .github/workflow/check.yml msrv
+rust-version = "1.88"   # also update in .github/workflow/check.yml msrv
 
 
 [features]
@@ -17,7 +17,18 @@ default = ["checked-ops"]
 
 checked-ops = []
 
-[dependencies]
+endian-conversion = []
+
+[dev-dependencies]
+strum = "0.27.1"
+strum_macros = "0.27.1"
+
+# required for minimal version test
+syn = "2.0.104"
+proc-macro2 = "1.0.95"
+quote = "1.0.40"
+
+
 
 [package.metadata.release]
 allow-branch = ["main"]

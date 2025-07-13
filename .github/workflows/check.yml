@@ -122,7 +122,7 @@ jobs:
     strategy:
       matrix:
         # Also update in Cargo.toml
-        msrv: ["1.87"] # 2024 edition requires 1.85
+        msrv: ["1.88"] # 2024 edition requires 1.85
     name: ubuntu / ${{ matrix.msrv }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # tag=v4.2.2
