@@ -34,11 +34,11 @@ a type alias for the correct endianness.
 `non_max.get()` will always return the native endian integer.
 
 ```rust
+#[cfg(feature = "endian-conversion")]
 use nonmaxunsigned::{NonMaxU32Le, NonMaxU32Be, NonMaxU32};
 
+#[cfg(feature = "endian-conversion")]
 fn main() {
-# #[cfg(feature = "endian-conversion")]
-# {
     let native = NonMaxU32::new(37).unwrap();
     let little = native.to_le();
     let big = native.to_be();
@@ -49,8 +49,9 @@ fn main() {
 
     assert_eq!(little.to_native(), native);
     assert_eq!(little.to_be(), big);
-# }
 }
+#[cfg(not(feature = "endian-conversion"))]
+fn main() {}
 ```
 
 ## Similar Crates
