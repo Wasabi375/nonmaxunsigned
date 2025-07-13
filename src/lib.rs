@@ -1,56 +1,83 @@
 #![doc = include_str!("../README.md")]
 #![no_std]
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 
 use core::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
     Mul, MulAssign, Sub, SubAssign,
 };
 
-/// NonMaxU8 is a nonmax version of [u8]
-#[derive(Clone, Copy)]
-#[repr(transparent)]
-#[allow(dead_code)]
-pub struct NonMaxU8(NonMaxU8Internal);
+macro_rules! gen_doc {
+    ($endian:literal $type:ident, $primitive:ty, $warn:literal, $item:item) => {
+        #[doc = concat!("[", stringify!($type), "] is a nonmax, ", $endian, "-endian version of [", stringify!($primitive),"].")]
+        #[doc = ""]
+        #[doc = concat!("This type behaves mostly like a `", stringify!($primitive), "` however `", stringify!($primitive), "::MAX` is not a valid value.")]
+        #[cfg_attr($warn, doc = concat!("Also this is stored as a ", $endian, "-endian integer."))]
+        #[cfg_attr($warn, doc = "This means that on systems with a different endianes there might be a small overhead in accessing this value")]
+        $item
+    };
+}
 
-/// NonMaxU16 is a nonmax version of [u16]
-#[derive(Clone, Copy)]
-#[repr(C)]
-#[allow(dead_code)]
-#[cfg(target_endian = "little")]
-pub struct NonMaxU16(NonMaxU8, u8);
-/// NonMaxU16 is a nonmax version of [u16]
-#[cfg(target_endian = "big")]
-#[derive(Clone, Copy)]
-#[repr(C)]
-#[allow(dead_code)]
-pub struct NonMaxU16(u8, NonMaxU8);
+macro_rules! nonmax_struct {
+    ($endian:literal $type:ident, $primitive:ty, $inner:tt) => {
+        gen_doc!($endian $type, $primitive, true,
+            #[derive(Clone, Copy)]
+            #[repr(C)]
+            #[allow(dead_code)]
+            #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+            pub struct $type $inner;
+        );
+    };
+}
 
-/// NonMaxU32 is a nonmax version of [u32]
-#[derive(Clone, Copy)]
-#[repr(C)]
-#[allow(dead_code)]
-#[cfg(target_endian = "little")]
-pub struct NonMaxU32(NonMaxU8, u8, u16);
-/// NonMaxU32 is a nonmax version of [u32]
-#[derive(Clone, Copy)]
-#[repr(C)]
-#[allow(dead_code)]
-#[cfg(target_endian = "big")]
-pub struct NonMaxU32(u16, u8, NonMaxU8);
+gen_doc!(
+    "native"
+    NonMaxU8,
+    u8,
+    false,
+    #[derive(Clone, Copy)]
+    #[repr(transparent)]
+    #[allow(dead_code)]
+    pub struct NonMaxU8(NonMaxU8Internal);
+);
 
-/// NonMaxU64 is a nonmax version of [u64]
-#[derive(Clone, Copy)]
-#[repr(C)]
-#[allow(dead_code)]
-#[cfg(target_endian = "little")]
-pub struct NonMaxU64(NonMaxU8, u8, u16, u32);
-/// NonMaxU64 is a nonmax version of [u64]
-#[derive(Clone, Copy)]
-#[repr(C)]
-#[allow(dead_code)]
-#[cfg(target_endian = "big")]
-pub struct NonMaxU64(u32, u16, u8, NonMaxU8);
+gen_doc!("native" NonMaxU16, u16, false,
+    #[cfg(target_endian = "little")]
+    pub type NonMaxU16 = NonMaxU16Le;
+);
+
+gen_doc!("native" NonMaxU16, u16, false,
+    #[cfg(target_endian = "big")]
+    pub type NonMaxU16 = NonMaxU16Be;
+);
+
+gen_doc!("native" NonMaxU32, u32, false,
+    #[cfg(target_endian = "little")]
+    pub type NonMaxU32 = NonMaxU32Le;
+);
+
+gen_doc!("native" NonMaxU32, u32, false,
+    #[cfg(target_endian = "big")]
+    pub type NonMaxU32 = NonMaxU32Be;
+);
+
+gen_doc!("native" NonMaxU64, u64, false,
+    #[cfg(target_endian = "little")]
+    pub type NonMaxU64 = NonMaxU64Le;
+);
+
+gen_doc!("native" NonMaxU64, u64, false,
+    #[cfg(target_endian = "big")]
+    pub type NonMaxU64 = NonMaxU64Be;
+);
+
+nonmax_struct!("little" NonMaxU16Le, u16, (NonMaxU8, u8));
+nonmax_struct!("little" NonMaxU32Le, u32, (NonMaxU8, [u8; 3]));
+nonmax_struct!("little" NonMaxU64Le, u64, (NonMaxU8, [u8; 7]));
+
+nonmax_struct!("big" NonMaxU16Be, u16, (u8, NonMaxU8));
+nonmax_struct!("big" NonMaxU32Be, u32, ([u8; 3], NonMaxU8));
+nonmax_struct!("big" NonMaxU64Be, u64, ([u8; 7], NonMaxU8));
 
 // NOTE: copy past from rust-lang: https://github.com/rust-lang/rust/blob/ab68b0fb26485ab1fa6977b2d8b59cc8a171c4aa/library/core/src/internal_macros.rs
 macro_rules! forward_ref_binop {
@@ -347,7 +374,7 @@ macro_rules! test_unop {
 }
 
 macro_rules! non_max_impl {
-    ($type:ty, $primitive:ty, $test_name:ident) => {
+    ($type:ty, $primitive:ty, $to_endian:ident, $from_endian:ident, $test_name:ident) => {
         impl $type {
 
             /// The smallest value that can be respresented by this integer type
@@ -395,6 +422,7 @@ macro_rules! non_max_impl {
             #[doc = concat!("`value` must not be `", stringify!($primitive), "::MAX`")]
             pub const unsafe fn new_unchecked(value: $primitive) -> Self {
                 assert!(value != Self::INVALID_UNDERLYING);
+                let value = value.$to_endian();
                 unsafe {
                     // Safety: $primitive and Self have the same size.
                     // Crate ensures that the only invalid bitpattern for Self
@@ -405,11 +433,12 @@ macro_rules! non_max_impl {
 
             /// Return the underlying integer type
             pub const fn get(self) -> $primitive {
-                unsafe {
+                let value = unsafe {
                     // Safety: primitive type can be created from any bit-pattern
                     // and $type and $primtive have the same size
                     core::mem::transmute_copy(&self)
-                }
+                };
+                <$primitive>::$from_endian(value)
             }
 
             /// Computes the absolute difference between `self` and `other`.
@@ -784,14 +813,102 @@ impl<T: core::fmt::Display> core::fmt::Display for PrimitiveIsMaxError<T> {
 
 impl<T: core::fmt::Display + core::fmt::Debug> core::error::Error for PrimitiveIsMaxError<T> {}
 
-non_max_impl!(NonMaxU8, u8, u8_test);
-non_max_impl!(NonMaxU16, u16, u16_test);
-non_max_impl!(NonMaxU32, u32, u32_test);
-non_max_impl!(NonMaxU64, u64, u64_test);
+non_max_impl!(NonMaxU8, u8, to_le, from_le, test_u8);
+
+#[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+non_max_impl!(NonMaxU16Le, u16, to_le, from_le, u16_test_le);
+#[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+non_max_impl!(NonMaxU32Le, u32, to_le, from_le, u32_test_le);
+#[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+non_max_impl!(NonMaxU64Le, u64, to_le, from_le, u64_test_le);
+
+#[cfg(any(target_endian = "big", feature = "endian-conversion"))]
+non_max_impl!(NonMaxU16Be, u16, to_be, from_be, u16_test_be);
+#[cfg(any(target_endian = "big", feature = "endian-conversion"))]
+non_max_impl!(NonMaxU32Be, u32, to_be, from_be, u32_test_be);
+#[cfg(any(target_endian = "big", feature = "endian-conversion"))]
+non_max_impl!(NonMaxU64Be, u64, to_be, from_be, u64_test_be);
+
+macro_rules! impl_endian_conversion {
+    ($le:ty, $be:ty) => {
+        #[cfg(feature = "endian-conversion")]
+        impl $le {
+            /// Converts [Self] to big-endian
+            #[inline(always)]
+            pub fn to_be(self) -> $be {
+                unsafe {
+                    // Safety: self is non_max, this does not change with endianes
+                    <$be>::new_unchecked(self.get())
+                }
+            }
+
+            /// Creates a [Self] from a big-endian integer
+            #[inline(always)]
+            pub fn from_be(value: $be) -> $le {
+                value.to_le()
+            }
+
+            /// Converts [Self] to little-endian
+            ///
+            /// This is a no-op on a little-endian system
+            #[cfg(target_endian = "little")]
+            #[inline(always)]
+            pub fn to_native(self) -> $le {
+                self
+            }
+
+            /// Converts [Self] to little-endian
+            #[cfg(target_endian = "big")]
+            #[inline(always)]
+            pub fn to_native(self) -> $be {
+                self.to_be()
+            }
+        }
+
+        #[cfg(feature = "endian-conversion")]
+        impl $be {
+            /// Converts [Self] to big-endian
+            #[inline(always)]
+            pub fn to_le(self) -> $le {
+                unsafe {
+                    // Safety: self is non_max, this does not change with endianes
+                    <$le>::new_unchecked(self.get())
+                }
+            }
+
+            /// Creates a [Self] from a big-endian integer
+            #[inline(always)]
+            pub fn from_le(value: $le) -> $be {
+                value.to_be()
+            }
+
+            /// Converts [Self] to little-endian
+            #[cfg(target_endian = "little")]
+            #[inline(always)]
+            pub fn to_native(self) -> $le {
+                self.to_le()
+            }
+
+            /// Converts [Self] to little-endian
+            ///
+            /// This is a no-op on a big-endian system
+            #[cfg(target_endian = "big")]
+            #[inline(always)]
+            pub fn to_native(self) -> $be {
+                self
+            }
+        }
+    };
+}
+
+impl_endian_conversion!(NonMaxU16Le, NonMaxU16Be);
+impl_endian_conversion!(NonMaxU32Le, NonMaxU32Be);
+impl_endian_conversion!(NonMaxU64Le, NonMaxU64Be);
 
 #[repr(u8)]
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(test, derive(strum_macros::EnumIter))]
 enum NonMaxU8Internal {
     V0 = 0,
     V1 = 1,
@@ -1053,25 +1170,37 @@ enum NonMaxU8Internal {
 #[cfg(test)]
 mod internal_tests {
 
+    use core::mem::transmute_copy;
+
     use super::*;
+    use strum::IntoEnumIterator;
 
     #[test]
-    fn u7_internal_sizes() {
+    fn nonmaxu8_internal_sizes() {
         assert_eq!(1, size_of::<NonMaxU8Internal>());
         assert_eq!(1, size_of::<Option<NonMaxU8Internal>>());
     }
 
     #[test]
-    fn u7_max() {
+    fn nonmaxu8_max() {
         assert_eq!(NonMaxU8Internal::V254 as u8, u8::MAX - 1);
     }
 
     #[test]
-    fn endianness_u15() {
-        #[cfg(target_endian = "little")]
-        let max = NonMaxU16(NonMaxU8(NonMaxU8Internal::V254), u8::MAX);
-        #[cfg(target_endian = "big")]
-        let max = NonMaxU16(u8::MAX, NonMaxU8(NonMaxU8Internal::V254));
+    fn nonmaxu8_internal_variances_correct() {
+        for (i, variant) in NonMaxU8Internal::iter().enumerate() {
+            assert_eq!(i as u8, unsafe { transmute_copy(&variant) });
+            assert_eq!(i as u8, unsafe { transmute_copy(&Some(variant)) });
+        }
+        assert_eq!(255u8, unsafe {
+            transmute_copy(&Option::<NonMaxU8Internal>::None)
+        });
+    }
+
+    #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+    #[test]
+    fn endianness_u16_little() {
+        let max = NonMaxU16Le(NonMaxU8(NonMaxU8Internal::V254), u8::MAX);
 
         assert_eq!(
             max.get(),
@@ -1080,15 +1209,28 @@ mod internal_tests {
             max.get(),
             u16::MAX - 1
         );
-        assert_eq!(max, NonMaxU16::MAX);
+        assert_eq!(max, NonMaxU16Le::MAX);
     }
 
+    #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
     #[test]
-    fn endianness_u31() {
-        #[cfg(target_endian = "little")]
-        let max = NonMaxU32(NonMaxU8(NonMaxU8Internal::V254), u8::MAX, u16::MAX);
-        #[cfg(target_endian = "big")]
-        let max = NonMaxU32(u16::MAX, u8::MAX, NonMaxU8(NonMaxU8Internal::V254));
+    fn endianness_u16_big() {
+        let max = NonMaxU16Be(u8::MAX, NonMaxU8(NonMaxU8Internal::V254));
+
+        assert_eq!(
+            max.get(),
+            u16::MAX - 1,
+            "{:b} != {:b}",
+            max.get(),
+            u16::MAX - 1
+        );
+        assert_eq!(max, NonMaxU16Be::MAX);
+    }
+
+    #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+    #[test]
+    fn endianness_u32_little() {
+        let max = NonMaxU32Le(NonMaxU8(NonMaxU8Internal::V254), [u8::MAX; 3]);
 
         assert_eq!(
             max.get(),
@@ -1097,25 +1239,28 @@ mod internal_tests {
             max.get(),
             u16::MAX - 1
         );
-        assert_eq!(max, NonMaxU32::MAX);
+        assert_eq!(max, NonMaxU32Le::MAX);
     }
 
+    #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
     #[test]
-    fn endianness_u63() {
-        #[cfg(target_endian = "little")]
-        let max = NonMaxU64(
-            NonMaxU8(NonMaxU8Internal::V254),
-            u8::MAX,
-            u16::MAX,
-            u32::MAX,
+    fn endianness_u32_big() {
+        let max = NonMaxU32Be([u8::MAX; 3], NonMaxU8(NonMaxU8Internal::V254));
+
+        assert_eq!(
+            max.get(),
+            u32::MAX - 1,
+            "{:b} != {:b}",
+            max.get(),
+            u16::MAX - 1
         );
-        #[cfg(target_endian = "big")]
-        let max = NonMaxU16(
-            u32::MAX,
-            u16::MAX,
-            u8::MAX,
-            NonMaxU8(NonMaxU8Internal::V254),
-        );
+        assert_eq!(max, NonMaxU32Be::MAX);
+    }
+
+    #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+    #[test]
+    fn endianness_u64_little() {
+        let max = NonMaxU64Le(NonMaxU8(NonMaxU8Internal::V254), [u8::MAX; 7]);
 
         assert_eq!(
             max.get(),
@@ -1124,6 +1269,21 @@ mod internal_tests {
             max.get(),
             u16::MAX - 1
         );
-        assert_eq!(max, NonMaxU64::MAX);
+        assert_eq!(max, NonMaxU64Le::MAX);
+    }
+
+    #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
+    #[test]
+    fn endianness_u64_big() {
+        let max = NonMaxU64Be([u8::MAX; 7], NonMaxU8(NonMaxU8Internal::V254));
+
+        assert_eq!(
+            max.get(),
+            u64::MAX - 1,
+            "{:b} != {:b}",
+            max.get(),
+            u16::MAX - 1
+        );
+        assert_eq!(max, NonMaxU64Be::MAX);
     }
 }
