@@ -1,6 +1,6 @@
 [package]
 name = "nonmaxunsigned"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2024"
 authors = ["Burkhard Mittelbach <burkhard@mittelbach-online.de>"]
 description = "A NonMax integer implementation not relying on NonZero"
