@@ -24,7 +24,7 @@ macro_rules! nonmax_struct {
             #[derive(Clone, Copy)]
             #[repr(C)]
             #[allow(dead_code)]
-            #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+            #[cfg(any(target_endian = $endian, feature = "endian-conversion"))]
             pub struct $type $inner;
         );
     };
@@ -432,6 +432,8 @@ macro_rules! non_max_impl {
             }
 
             /// Return the underlying integer type
+            ///
+            #[cfg_attr(feature = "endian-conversion", doc = "The result is a native-endian integer")]
             pub const fn get(self) -> $primitive {
                 let value = unsafe {
                     // Safety: primitive type can be created from any bit-pattern
@@ -833,6 +835,21 @@ macro_rules! impl_endian_conversion {
     ($le:ty, $be:ty) => {
         #[cfg(feature = "endian-conversion")]
         impl $le {
+            /// Converts [Self] to little-endian
+            ///
+            /// This is a no-op added for parity
+            #[inline(always)]
+            pub fn to_le(self) -> $le {
+                self
+            }
+
+            /// Creates a [Self] from a little-endian integer
+            ///
+            /// This is a no-op added for parity
+            pub fn from_le(value: $le) -> $le {
+                value
+            }
+
             /// Converts [Self] to big-endian
             #[inline(always)]
             pub fn to_be(self) -> $be {
@@ -867,7 +884,7 @@ macro_rules! impl_endian_conversion {
 
         #[cfg(feature = "endian-conversion")]
         impl $be {
-            /// Converts [Self] to big-endian
+            /// Converts [Self] to little-endian
             #[inline(always)]
             pub fn to_le(self) -> $le {
                 unsafe {
@@ -876,10 +893,26 @@ macro_rules! impl_endian_conversion {
                 }
             }
 
-            /// Creates a [Self] from a big-endian integer
+            /// Creates a [Self] from a little-endian integer
             #[inline(always)]
             pub fn from_le(value: $le) -> $be {
                 value.to_be()
+            }
+
+            /// Converts [Self] to big-endian
+            ///
+            /// This is a no-op added for parity
+            #[inline(always)]
+            pub fn to_be(self) -> $be {
+                self
+            }
+
+            /// Creates a [Self] from a big-endian integer
+            ///
+            /// This is a no-op added for parity
+            #[inline(always)]
+            pub fn from_be(value: $be) -> $be {
+                value
             }
 
             /// Converts [Self] to little-endian
