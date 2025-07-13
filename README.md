@@ -23,6 +23,36 @@ fn main() {
 }
 ```
 
+## Features
+
+### endian-conversion
+
+This feature provides access to little and big endian versions of the non-max integer types
+as well as conversions between them. The native version for the non-max integers is just
+a type alias for the correct endianness.
+
+`non_max.get()` will always return the native endian integer.
+
+```rust
+use nonmaxunsigned::{NonMaxU32Le, NonMaxU32Be, NonMaxU32};
+
+fn main() {
+# #[cfg(feature = "endian-conversion")]
+# {
+    let native = NonMaxU32::new(37).unwrap();
+    let little = native.to_le();
+    let big = native.to_be();
+
+    assert_eq!(little.get(), big.get());
+    assert_eq!(native.get(), big.get());
+    assert_eq!(native.get(), little.get());
+
+    assert_eq!(little.to_native(), native);
+    assert_eq!(little.to_be(), big);
+# }
+}
+```
+
 ## Similar Crates
 
 There are a few similar crates already existing on crates.io:

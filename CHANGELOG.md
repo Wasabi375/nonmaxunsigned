@@ -2,6 +2,10 @@
 
 ## [Unreleased] - ReleaseDate
 
+## Added
+
+* Little/Big-Endian variants of the non-max integers
+
 ## [1.0.0] - 2025-07-10
 
 ## Changes
