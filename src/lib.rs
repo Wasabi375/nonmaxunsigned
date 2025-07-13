@@ -13,7 +13,7 @@ macro_rules! gen_doc {
         #[doc = ""]
         #[doc = concat!("This type behaves mostly like a `", stringify!($primitive), "` however `", stringify!($primitive), "::MAX` is not a valid value.")]
         #[cfg_attr($warn, doc = concat!("Also this is stored as a ", $endian, "-endian integer."))]
-        #[cfg_attr($warn, doc = "This means that on systems with a different endianes there might be a small overhead in accessing this value")]
+        #[cfg_attr($warn, doc = "This means that on systems with a different endianness there might be a small overhead in accessing this value")]
         $item
     };
 }
@@ -854,7 +854,7 @@ macro_rules! impl_endian_conversion {
             #[inline(always)]
             pub fn to_be(self) -> $be {
                 unsafe {
-                    // Safety: self is non_max, this does not change with endianes
+                    // Safety: self is non_max, this does not change with endianness
                     <$be>::new_unchecked(self.get())
                 }
             }
@@ -888,7 +888,7 @@ macro_rules! impl_endian_conversion {
             #[inline(always)]
             pub fn to_le(self) -> $le {
                 unsafe {
-                    // Safety: self is non_max, this does not change with endianes
+                    // Safety: self is non_max, this does not change with endianness
                     <$le>::new_unchecked(self.get())
                 }
             }
