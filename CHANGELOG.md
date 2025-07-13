@@ -2,6 +2,10 @@
 
 ## [Unreleased] - ReleaseDate
 
+## Added
+
+* impl `Hash`
+
 ## [1.1.0] - 2025-07-13
 
 ## Added

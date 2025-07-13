@@ -604,6 +604,12 @@ macro_rules! non_max_impl {
             }
         }
 
+        impl core::hash::Hash for $type {
+            fn hash<H>(&self, state: &mut H) where H: core::hash::Hasher {
+                self.get().hash(state);
+            }
+        }
+
         impl_binop!(impl Add, add, $type, $primitive);
         impl_binop!(impl Sub, sub, $type, $primitive);
         impl_binop!(impl Mul, mul, $type, $primitive);
