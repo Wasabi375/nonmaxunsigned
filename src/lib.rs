@@ -137,10 +137,10 @@ macro_rules! impl_binop {
                 match Self::new(primitive) {
                     Some(res) => res,
                     None => panic!(
-                        "{}::{} resulted in forbidden max value({}). Use `checked_{}` instead",
+                        "{}::{} resulted in forbidden value > {}. Use `checked_{}` instead",
                         stringify!($type),
                         stringify!($method),
-                        Self::INVALID_UNDERLYING,
+                        Self::MAX_UNDERLYING,
                         stringify!($method),
                     ),
                 }
@@ -155,10 +155,10 @@ macro_rules! impl_binop {
                 match Self::new(primitive) {
                     Some(res) => res,
                     None => panic!(
-                        "{}::{} resulted in forbidden max value({}). Use `checked_{}` instead",
+                        "{}::{} resulted in forbidden value > {}. Use `checked_{}` instead",
                         stringify!($type),
                         stringify!($method),
-                        Self::INVALID_UNDERLYING,
+                        Self::MAX_UNDERLYING,
                         stringify!($method),
                     )
                 }
@@ -374,7 +374,7 @@ macro_rules! test_unop {
 }
 
 macro_rules! non_max_impl {
-    ($type:ty, $primitive:ty, $to_endian:ident, $from_endian:ident, $test_name:ident) => {
+    ($type:ty, $primitive:ty, $to_endian:ident, $from_endian:ident, $test_name:ident, bytes: $bytes:literal, max_hex: $max_hex:literal) => {
         impl $type {
 
             /// The smallest value that can be respresented by this integer type
@@ -383,12 +383,10 @@ macro_rules! non_max_impl {
                 Self::new_unchecked(0)
             };
 
-            /// The largest value that can be respresented by this integer type
+            #[doc = concat!("The largest value(", $max_hex, ") that can be respresented by this integer type")]
             pub const MAX: Self = unsafe {
-                // Safety: max - 1 is never max
-                Self::new_unchecked(<$primitive>::MAX - 1)
+                Self::new_unchecked(Self::MAX_UNDERLYING)
             };
-
 
             /// The size of this integer type in bits
             pub const BITS: u32 = <$primitive>::BITS - 1;
@@ -397,15 +395,12 @@ macro_rules! non_max_impl {
             #[doc = concat!("This is the same as `BITS` on the result type of [Self::get] ([", stringify!($primitive), "])")]
             pub const BITS_UNDERLYING: u32 = <$primitive>::BITS;
 
-            /// The value of the underlying integer that can *not* be represented
-            pub const INVALID_UNDERLYING: $primitive = <$primitive>::MAX;
-
-            /// The maximum value that can be safely converted into [Self]
-            pub const MAX_UNDERLYING: $primitive = <$primitive>::MAX - 1;
+            #[doc = concat!("The maximum value(", $max_hex, ") that can be safely converted into [Self]")]
+            pub const MAX_UNDERLYING: $primitive = (255 << (8 * ($bytes - 1))) - 1;
 
             /// Create a new [Self] or `None` if value is the max of the underlying integer type
             pub const fn new(value: $primitive) -> Option<Self> {
-                if value == Self::INVALID_UNDERLYING {
+                if value > Self::MAX_UNDERLYING {
                     None
                 } else {
                     unsafe {
@@ -421,7 +416,7 @@ macro_rules! non_max_impl {
             ///
             #[doc = concat!("`value` must not be `", stringify!($primitive), "::MAX`")]
             pub const unsafe fn new_unchecked(value: $primitive) -> Self {
-                assert!(value != Self::INVALID_UNDERLYING);
+                assert!(value <= Self::MAX_UNDERLYING);
                 let value = value.$to_endian();
                 unsafe {
                     // Safety: $primitive and Self have the same size.
@@ -435,12 +430,21 @@ macro_rules! non_max_impl {
             ///
             #[cfg_attr(feature = "endian-conversion", doc = "The result is a native-endian integer")]
             pub const fn get(self) -> $primitive {
-                let value = unsafe {
+                let value = self.get_underlying();
+                <$primitive>::$from_endian(value)
+            }
+
+            /// Return the underlying integer type
+            ///
+            /// Unlike [Self::get] this does not convert the result into a native-endian integer.
+            pub const fn get_underlying(self) -> $primitive {
+                unsafe {
                     // Safety: primitive type can be created from any bit-pattern
                     // and $type and $primtive have the same size
                     core::mem::transmute_copy(&self)
-                };
-                <$primitive>::$from_endian(value)
+                }
+            }
+
             }
 
             /// Computes the absolute difference between `self` and `other`.
@@ -630,10 +634,10 @@ macro_rules! non_max_impl {
         impl_assign_op!(impl BitXorAssign, bitxor_assign, BitXor, bitxor, $type, $primitive);
 
         impl TryFrom<$primitive> for $type {
-            type Error = PrimitiveIsMaxError<$primitive>;
+            type Error = PrimitiveGreaterMaxError<$primitive>;
 
             fn try_from(value: $primitive) -> Result<Self, Self::Error> {
-                Self::new(value).ok_or(PrimitiveIsMaxError(Self::INVALID_UNDERLYING))
+                Self::new(value).ok_or(PrimitiveGreaterMaxError(Self::MAX_UNDERLYING))
             }
         }
 
@@ -653,6 +657,8 @@ macro_rules! non_max_impl {
                 assert_eq!(size_of::<Option<$type>>(), size_of::<$primitive>());
             }
 
+
+
             test_binop!(abs_diff for $type, $primitive => (10, 5; 5), (15, 25; 10));
             test_binop!(div_ceil for $type, $primitive => (10, 5; 2), (12, 7; 2));
 
@@ -669,7 +675,7 @@ macro_rules! non_max_impl {
             test_unop!(direct ilog10 for $type, $primitive => (10; 1), (100; 2), (105; 2));
 
             test_binop!(checked checked_add for $type, $primitive => (10, 20; Some(30)), (<$type>::MAX_UNDERLYING, 1; None), (<$type>::MAX_UNDERLYING, 5; None));
-            test_binop!(checked checked_mul for $type, $primitive => (10, 5; Some(50)), (<$type>::INVALID_UNDERLYING / 5, 5; None), (<$type>::MAX_UNDERLYING, 2; None));
+            test_binop!(checked checked_mul for $type, $primitive => (10, 5; Some(50)), ((<$type>::MAX_UNDERLYING + 1) / 5, 5; None), (<$type>::MAX_UNDERLYING, 2; None));
             test_binop!(checked checked_div for $type, $primitive => (10, 5; Some(2)), (10, 0; None));
             test_binop!(checked checked_div_euclid for $type, $primitive => (10, 5; Some(2)), (10, 0; None));
             test_binop!(checked checked_sub for $type, $primitive => (10, 5; Some(5)), (5, 10; None), (22, 22; Some(0)));
@@ -811,31 +817,31 @@ macro_rules! non_max_impl {
 ///
 /// See [NonMaxU8], [NonMaxU16], [NonMaxU32], [NonMaxU64]
 #[derive(Debug, Clone, Copy)]
-pub struct PrimitiveIsMaxError<T>(pub T);
+pub struct PrimitiveGreaterMaxError<T>(pub T);
 
-impl<T: core::fmt::Display> core::fmt::Display for PrimitiveIsMaxError<T> {
+impl<T: core::fmt::Display> core::fmt::Display for PrimitiveGreaterMaxError<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_fmt(format_args!("PrimitiveIsMaxError({})", self.0))
+        f.write_fmt(format_args!("PrimitiveGreaterMaxError({})", self.0))
     }
 }
 
-impl<T: core::fmt::Display + core::fmt::Debug> core::error::Error for PrimitiveIsMaxError<T> {}
+impl<T: core::fmt::Display + core::fmt::Debug> core::error::Error for PrimitiveGreaterMaxError<T> {}
 
-non_max_impl!(NonMaxU8, u8, to_le, from_le, test_u8);
+non_max_impl!(NonMaxU8, u8, to_le, from_le, test_u8, bytes: 1, max_hex: "0xfe");
 
 #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
-non_max_impl!(NonMaxU16Le, u16, to_le, from_le, u16_test_le);
+non_max_impl!(NonMaxU16Le, u16, to_le, from_le, u16_test_le, bytes: 2, max_hex: "0xfeff");
 #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
-non_max_impl!(NonMaxU32Le, u32, to_le, from_le, u32_test_le);
+non_max_impl!(NonMaxU32Le, u32, to_le, from_le, u32_test_le, bytes: 4, max_hex: "0xfeff_ffff");
 #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
-non_max_impl!(NonMaxU64Le, u64, to_le, from_le, u64_test_le);
+non_max_impl!(NonMaxU64Le, u64, to_le, from_le, u64_test_le, bytes: 8, max_hex: "0xfeff_ffff_ffff_ffff");
 
 #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
-non_max_impl!(NonMaxU16Be, u16, to_be, from_be, u16_test_be);
+non_max_impl!(NonMaxU16Be, u16, to_be, from_be, u16_test_be, bytes: 2, max_hex: "0xfeff");
 #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
-non_max_impl!(NonMaxU32Be, u32, to_be, from_be, u32_test_be);
+non_max_impl!(NonMaxU32Be, u32, to_be, from_be, u32_test_be, bytes: 4, max_hex: "0xfeff_ffff");
 #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
-non_max_impl!(NonMaxU64Be, u64, to_be, from_be, u64_test_be);
+non_max_impl!(NonMaxU64Be, u64, to_be, from_be, u64_test_be, bytes: 8, max_hex: "0xfeff_ffff_ffff_ffff");
 
 macro_rules! impl_endian_conversion {
     ($le:ty, $be:ty) => {
