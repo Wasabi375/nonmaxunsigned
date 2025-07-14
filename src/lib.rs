@@ -389,11 +389,7 @@ macro_rules! non_max_impl {
             };
 
             /// The size of this integer type in bits
-            pub const BITS: u32 = <$primitive>::BITS - 1;
-
-            /// The size of the underlying interger type in bits
-            #[doc = concat!("This is the same as `BITS` on the result type of [Self::get] ([", stringify!($primitive), "])")]
-            pub const BITS_UNDERLYING: u32 = <$primitive>::BITS;
+            pub const BITS: u32 = <$primitive>::BITS;
 
             #[doc = concat!("The maximum value(", $max_hex, ") that can be safely converted into [Self]")]
             pub const MAX_UNDERLYING: $primitive = (255 << (8 * ($bytes - 1))) - 1;
@@ -772,7 +768,7 @@ macro_rules! non_max_impl {
                     );
                 }
                 {
-                    let primitive_res: Option<$primitive> = (25 as $primitive).checked_shl(<$type>::BITS_UNDERLYING);
+                    let primitive_res: Option<$primitive> = (25 as $primitive).checked_shl(<$type>::BITS);
                     let primitive_res = primitive_res
                         .map(|v| <$type>::new(v))
                         .flatten()
@@ -781,7 +777,7 @@ macro_rules! non_max_impl {
                         Option::map(
                             <$type>::new(25)
                                 .unwrap()
-                                .checked_shl(<$type>::BITS_UNDERLYING),
+                                .checked_shl(<$type>::BITS),
                             |v| { <$type>::get(v) }
                         ),
                         primitive_res,
@@ -791,7 +787,7 @@ macro_rules! non_max_impl {
                         Option::map(
                             <$type>::new(25)
                                 .unwrap()
-                                .checked_shl(<$type>::BITS_UNDERLYING),
+                                .checked_shl(<$type>::BITS),
                             |v| { v.get() }
                         ),
                         None,
@@ -830,7 +826,7 @@ macro_rules! non_max_impl {
                     );
                 }
                 {
-                    let primitive_res: Option<$primitive> = (25 as $primitive).checked_shr(<$type>::BITS_UNDERLYING);
+                    let primitive_res: Option<$primitive> = (25 as $primitive).checked_shr(<$type>::BITS);
                     let primitive_res = primitive_res
                         .map(|v| <$type>::new(v))
                         .flatten()
@@ -839,7 +835,7 @@ macro_rules! non_max_impl {
                         Option::map(
                             <$type>::new(25)
                                 .unwrap()
-                                .checked_shr(<$type>::BITS_UNDERLYING),
+                                .checked_shr(<$type>::BITS),
                             |v| { <$type>::get(v) }
                         ),
                         primitive_res,
@@ -849,7 +845,7 @@ macro_rules! non_max_impl {
                         Option::map(
                             <$type>::new(25)
                                 .unwrap()
-                                .checked_shr(<$type>::BITS_UNDERLYING),
+                                .checked_shr(<$type>::BITS),
                             |v| { v.get() }
                         ),
                         None,
