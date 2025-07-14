@@ -701,7 +701,12 @@ macro_rules! non_max_impl {
                 assert_eq!(size_of::<Option<$type>>(), size_of::<$primitive>());
             }
 
+            #[test]
+            fn option() {
+                let non_max = <$type>::new(89).unwrap();
 
+                assert_eq!(non_max.to_bytes(), unsafe { core::mem::transmute_copy::<_, [u8; $bytes]>(&Some(non_max)) });
+            }
 
             test_binop!(abs_diff for $type, $primitive => (10, 5; 5), (15, 25; 10));
             test_binop!(div_ceil for $type, $primitive => (10, 5; 2), (12, 7; 2));
@@ -1258,11 +1263,76 @@ enum NonMaxU8Internal {
 
 #[cfg(test)]
 mod internal_tests {
-
     use core::mem::transmute_copy;
 
     use super::*;
     use strum::IntoEnumIterator;
+
+    #[test]
+    #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+    fn u16_le_none() {
+        let none: Option<NonMaxU16Le> = None;
+        let none_bytes: [u8; 2] = unsafe { core::mem::transmute_copy(&none) };
+        let none_primitive = u16::from_le(unsafe { core::mem::transmute_copy(&none) });
+
+        assert_eq!(none_bytes[1], 255);
+        assert!(none_primitive >= 255 << 8);
+    }
+
+    #[test]
+    #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
+    fn u16_be_none() {
+        let none: Option<NonMaxU16Be> = None;
+        let none_bytes: [u8; 2] = unsafe { core::mem::transmute_copy(&none) };
+        let none_primitive = u16::from_be(unsafe { core::mem::transmute_copy(&none) });
+
+        assert_eq!(none_bytes[0], 255);
+        assert!(none_primitive >= 255 << 8);
+    }
+
+    #[test]
+    #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+    fn u32_le_none() {
+        let none: Option<NonMaxU32Le> = None;
+        let none_bytes: [u8; 4] = unsafe { core::mem::transmute_copy(&none) };
+        let none_primitive = u32::from_le(unsafe { core::mem::transmute_copy(&none) });
+
+        assert_eq!(none_bytes[3], 255);
+        assert!(none_primitive >= 255 << (8 * 3));
+    }
+
+    #[test]
+    #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
+    fn u32_be_none() {
+        let none: Option<NonMaxU32Be> = None;
+        let none_bytes: [u8; 4] = unsafe { core::mem::transmute_copy(&none) };
+        let none_primitive = u32::from_be(unsafe { core::mem::transmute_copy(&none) });
+
+        assert_eq!(none_bytes[0], 255);
+        assert!(none_primitive >= 255 << (8 * 3));
+    }
+
+    #[test]
+    #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+    fn u64_le_none() {
+        let none: Option<NonMaxU64Le> = None;
+        let none_bytes: [u8; 8] = unsafe { core::mem::transmute_copy(&none) };
+        let none_primitive = u64::from_le(unsafe { core::mem::transmute_copy(&none) });
+
+        assert_eq!(none_bytes[7], 255);
+        assert!(none_primitive >= 255 << (8 * 7));
+    }
+
+    #[test]
+    #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
+    fn u64_be_none() {
+        let none: Option<NonMaxU64Be> = None;
+        let none_bytes: [u8; 8] = unsafe { core::mem::transmute_copy(&none) };
+        let none_primitive = u64::from_be(unsafe { core::mem::transmute_copy(&none) });
+
+        assert_eq!(none_bytes[0], 255);
+        assert!(none_primitive >= 255 << (8 * 7));
+    }
 
     #[test]
     fn nonmaxu8_internal_sizes() {
@@ -1286,93 +1356,93 @@ mod internal_tests {
         });
     }
 
-    #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
-    #[test]
-    fn endianness_u16_little() {
-        let max = NonMaxU16Le(NonMaxU8(NonMaxU8Internal::V254), u8::MAX);
-
-        assert_eq!(
-            max.get(),
-            u16::MAX - 1,
-            "{:b} != {:b}",
-            max.get(),
-            u16::MAX - 1
-        );
-        assert_eq!(max, NonMaxU16Le::MAX);
-    }
-
     #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
     #[test]
-    fn endianness_u16_big() {
-        let max = NonMaxU16Be(u8::MAX, NonMaxU8(NonMaxU8Internal::V254));
+    fn endianness_u16_little() {
+        let max = NonMaxU16Be(NonMaxU8(NonMaxU8Internal::V254), u8::MAX);
 
         assert_eq!(
             max.get(),
-            u16::MAX - 1,
+            NonMaxU16::MAX_UNDERLYING,
             "{:b} != {:b}",
             max.get(),
-            u16::MAX - 1
+            NonMaxU16::MAX_UNDERLYING
         );
         assert_eq!(max, NonMaxU16Be::MAX);
     }
 
     #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
     #[test]
-    fn endianness_u32_little() {
-        let max = NonMaxU32Le(NonMaxU8(NonMaxU8Internal::V254), [u8::MAX; 3]);
+    fn endianness_u16_big() {
+        let max = NonMaxU16Le(u8::MAX, NonMaxU8(NonMaxU8Internal::V254));
 
         assert_eq!(
             max.get(),
-            u32::MAX - 1,
+            NonMaxU16::MAX_UNDERLYING,
             "{:b} != {:b}",
             max.get(),
-            u16::MAX - 1
+            NonMaxU16::MAX_UNDERLYING
         );
-        assert_eq!(max, NonMaxU32Le::MAX);
+        assert_eq!(max, NonMaxU16Le::MAX);
     }
 
     #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
     #[test]
-    fn endianness_u32_big() {
-        let max = NonMaxU32Be([u8::MAX; 3], NonMaxU8(NonMaxU8Internal::V254));
+    fn endianness_u32_little() {
+        let max = NonMaxU32Be(NonMaxU8(NonMaxU8Internal::V254), [u8::MAX; 3]);
 
         assert_eq!(
             max.get(),
-            u32::MAX - 1,
+            NonMaxU32::MAX_UNDERLYING,
             "{:b} != {:b}",
             max.get(),
-            u16::MAX - 1
+            NonMaxU32::MAX_UNDERLYING
         );
         assert_eq!(max, NonMaxU32Be::MAX);
     }
 
     #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
     #[test]
-    fn endianness_u64_little() {
-        let max = NonMaxU64Le(NonMaxU8(NonMaxU8Internal::V254), [u8::MAX; 7]);
+    fn endianness_u32_big() {
+        let max = NonMaxU32Le([u8::MAX; 3], NonMaxU8(NonMaxU8Internal::V254));
 
         assert_eq!(
             max.get(),
-            u64::MAX - 1,
+            NonMaxU32::MAX_UNDERLYING,
             "{:b} != {:b}",
             max.get(),
-            u16::MAX - 1
+            NonMaxU32::MAX_UNDERLYING
         );
-        assert_eq!(max, NonMaxU64Le::MAX);
+        assert_eq!(max, NonMaxU32Le::MAX);
     }
 
     #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
     #[test]
-    fn endianness_u64_big() {
-        let max = NonMaxU64Be([u8::MAX; 7], NonMaxU8(NonMaxU8Internal::V254));
+    fn endianness_u64_little() {
+        let max = NonMaxU64Be(NonMaxU8(NonMaxU8Internal::V254), [u8::MAX; 7]);
 
         assert_eq!(
             max.get(),
-            u64::MAX - 1,
+            NonMaxU64::MAX_UNDERLYING,
             "{:b} != {:b}",
             max.get(),
-            u16::MAX - 1
+            NonMaxU64::MAX_UNDERLYING
         );
         assert_eq!(max, NonMaxU64Be::MAX);
+    }
+
+    #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+    #[test]
+    fn endianness_u64_big() {
+        let max = NonMaxU64Le([u8::MAX; 7], NonMaxU8(NonMaxU8Internal::V254));
+
+        assert_eq!(
+            max.get(),
+            NonMaxU64::MAX_UNDERLYING,
+            "{:b} != {:b}",
+            max.get(),
+            NonMaxU64::MAX_UNDERLYING
+        );
+        assert_eq!(max, NonMaxU64Le::MAX);
     }
 }
