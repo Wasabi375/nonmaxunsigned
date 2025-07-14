@@ -2,6 +2,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [2.0.0] - 2025-07-14
+
 ## Breaking Changes
 
 * `MAX` value is now lower to allow for `None`:
@@ -51,7 +53,8 @@ This should now be fixed.
 * `U7`, `U15`, `U31`, `U63` that implement methods and traits found for rusts unsigned types
 
 <!-- next-url -->
-[Unreleased]: https://github.com/wasabi375/nonmaxunsigned/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/wasabi375/nonmaxunsigned/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/wasabi375/nonmaxunsigned/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/wasabi375/nonmaxunsigned/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/wasabi375/nonmaxunsigned/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/wasabi375/nonmaxunsigned/compare/v0.1.0...v1.0.0
