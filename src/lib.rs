@@ -1266,8 +1266,10 @@ mod internal_tests {
 
     #[test]
     #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+    #[cfg_attr(miri, ignore)]
     fn u16_le_none() {
         let none: Option<NonMaxU16Le> = None;
+        // Safety: this is not safe, but this is the point of this crate.
         let none_bytes: [u8; 2] = unsafe { core::mem::transmute_copy(&none) };
         let none_primitive = u16::from_le(unsafe { core::mem::transmute_copy(&none) });
 
@@ -1277,8 +1279,10 @@ mod internal_tests {
 
     #[test]
     #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
+    #[cfg_attr(miri, ignore)]
     fn u16_be_none() {
         let none: Option<NonMaxU16Be> = None;
+        // Safety: this is not safe, but this is the point of this crate.
         let none_bytes: [u8; 2] = unsafe { core::mem::transmute_copy(&none) };
         let none_primitive = u16::from_be(unsafe { core::mem::transmute_copy(&none) });
 
@@ -1288,8 +1292,10 @@ mod internal_tests {
 
     #[test]
     #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+    #[cfg_attr(miri, ignore)]
     fn u32_le_none() {
         let none: Option<NonMaxU32Le> = None;
+        // Safety: this is not safe, but this is the point of this crate.
         let none_bytes: [u8; 4] = unsafe { core::mem::transmute_copy(&none) };
         let none_primitive = u32::from_le(unsafe { core::mem::transmute_copy(&none) });
 
@@ -1299,8 +1305,10 @@ mod internal_tests {
 
     #[test]
     #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
+    #[cfg_attr(miri, ignore)]
     fn u32_be_none() {
         let none: Option<NonMaxU32Be> = None;
+        // Safety: this is not safe, but this is the point of this crate.
         let none_bytes: [u8; 4] = unsafe { core::mem::transmute_copy(&none) };
         let none_primitive = u32::from_be(unsafe { core::mem::transmute_copy(&none) });
 
@@ -1310,8 +1318,10 @@ mod internal_tests {
 
     #[test]
     #[cfg(any(target_endian = "little", feature = "endian-conversion"))]
+    #[cfg_attr(miri, ignore)]
     fn u64_le_none() {
         let none: Option<NonMaxU64Le> = None;
+        // Safety: this is not safe, but this is the point of this crate.
         let none_bytes: [u8; 8] = unsafe { core::mem::transmute_copy(&none) };
         let none_primitive = u64::from_le(unsafe { core::mem::transmute_copy(&none) });
 
@@ -1321,8 +1331,10 @@ mod internal_tests {
 
     #[test]
     #[cfg(any(target_endian = "big", feature = "endian-conversion"))]
+    #[cfg_attr(miri, ignore)]
     fn u64_be_none() {
         let none: Option<NonMaxU64Be> = None;
+        // Safety: this is not safe, but this is the point of this crate.
         let none_bytes: [u8; 8] = unsafe { core::mem::transmute_copy(&none) };
         let none_primitive = u64::from_be(unsafe { core::mem::transmute_copy(&none) });
 
