@@ -5,9 +5,14 @@
 [![Dependency status](https://deps.rs/repo/github/Wasabi375/nonmaxunsigned/status.svg)](https://deps.rs/repo/github/Wasabi375/nonmaxunsigned)
 
 This crate provides an implementation for non-max integer types
-with [null-pointer-optimization].
+with [null-pointer-optimization] and ensures that the binary representation
+of the non-max and the normal integers are the same.
 
 This crate is usable in a `no-std` environment.
+
+> [!WARNING]
+> This crate relies on undefined behaviour in the rust compiler and there is no
+> guarantee that this will continue to work in the future.
 
 ## Example
 
@@ -22,6 +27,23 @@ fn main() {
     assert_eq!(None, NonMaxU8::new(u8::MAX));
 }
 ```
+
+## Maximum Value
+
+The maximum value for the non-max integers is lower than just `max - 1`.
+This is neccessary to ensure that the binary representation is the same as the
+normal integers.
+
+The maximum value for each non-max version is as follows:
+
+| Integer | Hex | Decimal | Difference Hex | Difference Decimal |
+| --- | ---  | --- | --- | --- |
+| `u8`    | `0xfe`                  | 255     | `0x1` | 1 |
+| `u16`   | `0xfeff`                | 65279     | `0x100` | 256 |
+| `u32`   | `0xfeff_ffff`           | 4278190079 | `0x100_0000` | 116777216 |
+| `u64`   | `0xfeff_ffff_ffff_ffff` | 18374686479671623679 | `0x100_0000_0000_0000` | 72057594037927936 |
+
+
 
 ## Features
 
@@ -49,6 +71,9 @@ fn main() {
 
     assert_eq!(little.to_native(), native);
     assert_eq!(little.to_be(), big);
+
+    assert_eq!(little.get_underlying(), 37u32.to_le());
+    assert_eq!(big.get_underlying(), 37u32.to_be());
 }
 #[cfg(not(feature = "endian-conversion"))]
 fn main() {}
