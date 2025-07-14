@@ -445,6 +445,50 @@ macro_rules! non_max_impl {
                 }
             }
 
+
+            /// Returns the memory representation of this integer as a byte array.
+            ///
+            #[cfg_attr(feature = "endian-conversion", doc = "The result is in the underlying endianness. `to_ne_bytes` should be used for native endianness.")]
+            pub const fn to_bytes(self) -> [u8; $bytes] {
+                unsafe {
+                    // Safety: size_of(self) == $bytes
+                    core::mem::transmute_copy(&self)
+                }
+            }
+
+            /// Returns the memory representation of this integer as a byte array in native byte order.
+            ///
+            #[cfg_attr(feature = "endian-conversion", doc = "As the target platform’s native endianness is used,")]
+            #[cfg_attr(feature = "endian-conversion", doc = "portable code should use [self.to_le_bytes] or [self.to_be_bytes], as appropriate, instead.")]
+            pub const fn to_ne_bytes(self) -> [u8; $bytes] {
+                self.get().to_ne_bytes()
+            }
+
+            /// Returns the memory representation of this integer as a byte array in little-endian order.
+            pub const fn to_le_bytes(self) -> [u8; $bytes] {
+                self.get().to_le_bytes()
+            }
+
+            /// Returns the memory representation of this integer as a byte array in big-endian order.
+            pub const fn to_be_bytes(self) -> [u8; $bytes] {
+                self.get().to_be_bytes()
+            }
+
+            /// Creates a [Self] from it's memory representation s a byte array in native endianness.
+            ///
+            /// As the target platform’s native endianness is used, portable code likely wants to use `from_be_bytes` or `from_le_bytes`, as appropriate instead.
+            pub const fn from_ne_bytes(bytes: [u8; $bytes]) -> Option<Self> {
+                Self::new(<$primitive>::from_ne_bytes(bytes))
+            }
+
+            /// Creates a [Self] from it's memory representation s a byte array in little-endian.
+            pub const fn from_le_bytes(bytes: [u8; $bytes]) -> Option<Self> {
+                Self::new(<$primitive>::from_le_bytes(bytes))
+            }
+
+            /// Creates a [Self] from it's memory representation s a byte array in big-endian.
+            pub const fn from_be_bytes(bytes: [u8; $bytes]) -> Option<Self> {
+                Self::new(<$primitive>::from_be_bytes(bytes))
             }
 
             /// Computes the absolute difference between `self` and `other`.
