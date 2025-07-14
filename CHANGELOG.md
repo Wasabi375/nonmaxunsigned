@@ -2,6 +2,23 @@
 
 ## [Unreleased] - ReleaseDate
 
+## Breaking Changes
+
+* `MAX` value is now lower to allow for `None`:
+    * `NonMaxU16::MAX = 0xfeff`
+    * `NonMaxU32::MAX = 0xfeff_ffff`
+    * `NonMaxU64::MAX = 0xfeff_ffff_ffff_ffff`
+* removed `INVALID_UNDERLYING`. Instead every value above `MAX_UNDERLYING` is invalid
+* removed `BITS_UNDERLYING`
+
+## Fixes
+
+* The previous implementation had a crucial bug. `Option<NonMaxU16>`, etc 
+used a slightly different binary representation from what I expected.
+This should now be fixed.
+* little and big endian implementations were swapped
+
+
 ## [1.2.0] - 2025-07-13
 
 ## Added
