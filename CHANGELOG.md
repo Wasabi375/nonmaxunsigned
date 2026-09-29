@@ -2,6 +2,10 @@
 
 ## [Unreleased] - ReleaseDate
 
+## Added
+
+* Support for the [bytemuck](https://crates.io/crates/bytemuck) crate using the `bytemuck` feature
+
 ## [2.0.0] - 2025-07-14
 
 ## Breaking Changes

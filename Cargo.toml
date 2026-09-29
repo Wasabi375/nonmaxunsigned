@@ -16,8 +16,11 @@ rust-version = "1.88"   # also update in .github/workflow/check.yml msrv
 default = ["checked-ops"]
 
 checked-ops = []
-
 endian-conversion = []
+bytemuck = ["dep:bytemuck"]
+
+[dependencies]
+bytemuck = { version = "1.25", optional = true }
 
 [dev-dependencies]
 strum = "0.27.1"

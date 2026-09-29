@@ -7,6 +7,9 @@ use core::ops::{
     Mul, MulAssign, Sub, SubAssign,
 };
 
+#[cfg(feature = "bytemuck")]
+mod bytemuck_impls;
+
 macro_rules! gen_doc {
     ($endian:literal $type:ident, $primitive:ty, $warn:literal, $item:item) => {
         #[doc = concat!("[", stringify!($type), "] is a nonmax, ", $endian, "-endian version of [", stringify!($primitive),"].")]
@@ -395,6 +398,8 @@ macro_rules! non_max_impl {
             pub const MAX_UNDERLYING: $primitive = (255 << (8 * ($bytes - 1))) - 1;
 
             /// Create a new [Self] or `None` if value is the max of the underlying integer type
+            ///
+            /// `value` must be in native-endianness.
             pub const fn new(value: $primitive) -> Option<Self> {
                 if value > Self::MAX_UNDERLYING {
                     None
@@ -408,9 +413,11 @@ macro_rules! non_max_impl {
 
             /// Create a new [Self] without checking if the value is the max of the underlying integer type
             ///
+            /// `value` must be in native-endianness.
+            ///
             /// # Safety
             ///
-            #[doc = concat!("`value` must not be `", stringify!($primitive), "::MAX`")]
+            #[doc = concat!("`value` must not be greater than`", stringify!($primitive), "::MAX`")]
             pub const unsafe fn new_unchecked(value: $primitive) -> Self {
                 assert!(value <= Self::MAX_UNDERLYING);
                 let value = value.$to_endian();
@@ -470,19 +477,19 @@ macro_rules! non_max_impl {
                 self.get().to_be_bytes()
             }
 
-            /// Creates a [Self] from it's memory representation s a byte array in native endianness.
+            /// Creates a [Self] from its memory representation as a byte array in native endianness.
             ///
             /// As the target platform’s native endianness is used, portable code likely wants to use `from_be_bytes` or `from_le_bytes`, as appropriate instead.
             pub const fn from_ne_bytes(bytes: [u8; $bytes]) -> Option<Self> {
                 Self::new(<$primitive>::from_ne_bytes(bytes))
             }
 
-            /// Creates a [Self] from it's memory representation s a byte array in little-endian.
+            /// Creates a [Self] from its memory representation as a byte array in little-endian.
             pub const fn from_le_bytes(bytes: [u8; $bytes]) -> Option<Self> {
                 Self::new(<$primitive>::from_le_bytes(bytes))
             }
 
-            /// Creates a [Self] from it's memory representation s a byte array in big-endian.
+            /// Creates a [Self] from its memory representation as a byte array in big-endian.
             pub const fn from_be_bytes(bytes: [u8; $bytes]) -> Option<Self> {
                 Self::new(<$primitive>::from_be_bytes(bytes))
             }
