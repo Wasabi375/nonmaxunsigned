@@ -12,6 +12,7 @@ macro_rules! impl_checked {
             }
         }
         unsafe impl bytemuck::Zeroable for $type {}
+        unsafe impl bytemuck::NoUninit for $type {}
 
         unsafe impl bytemuck::ZeroableInOption for $type {}
         unsafe impl bytemuck::PodInOption for $type {}
