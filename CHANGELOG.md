@@ -2,6 +2,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [2.1.0] - 2026-11-17
+
 ## Added
 
 * Support for the [bytemuck](https://crates.io/crates/bytemuck) crate using the `bytemuck` feature
@@ -58,7 +60,8 @@ This should now be fixed.
 * `U7`, `U15`, `U31`, `U63` that implement methods and traits found for rusts unsigned types
 
 <!-- next-url -->
-[Unreleased]: https://github.com/wasabi375/nonmaxunsigned/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/wasabi375/nonmaxunsigned/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/wasabi375/nonmaxunsigned/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/wasabi375/nonmaxunsigned/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/wasabi375/nonmaxunsigned/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/wasabi375/nonmaxunsigned/compare/v1.0.0...v1.1.0
