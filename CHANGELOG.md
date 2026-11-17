@@ -5,6 +5,7 @@
 ## Added
 
 * Support for the [bytemuck](https://crates.io/crates/bytemuck) crate using the `bytemuck` feature
+* Support for the [zerocopy](https://crates.io/crates/zerocopy) crate using the `zerocopy` feature
 
 ## [2.0.0] - 2025-07-14
 
