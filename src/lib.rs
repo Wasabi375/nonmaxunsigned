@@ -28,6 +28,15 @@ macro_rules! nonmax_struct {
             #[repr(C)]
             #[allow(dead_code)]
             #[cfg(any(target_endian = $endian, feature = "endian-conversion"))]
+            #[cfg_attr(
+                feature = "zerocopy",
+                derive(
+                    zerocopy::Immutable,
+                    zerocopy::KnownLayout,
+                    zerocopy::IntoBytes,
+                    zerocopy::TryFromBytes,
+                )
+            )]
             pub struct $type $inner;
         );
     };
@@ -41,6 +50,15 @@ gen_doc!(
     #[derive(Clone, Copy)]
     #[repr(transparent)]
     #[allow(dead_code)]
+    #[cfg_attr(
+        feature = "zerocopy",
+        derive(
+            zerocopy::Immutable,
+            zerocopy::KnownLayout,
+            zerocopy::IntoBytes,
+            zerocopy::TryFromBytes,
+        )
+    )]
     pub struct NonMaxU8(NonMaxU8Internal);
 );
 
@@ -1006,6 +1024,16 @@ impl_endian_conversion!(NonMaxU64Le, NonMaxU64Be);
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(test, derive(strum_macros::EnumIter))]
+#[cfg_attr(
+    feature = "zerocopy",
+    derive(
+        zerocopy::Immutable,
+        zerocopy::KnownLayout,
+        zerocopy::IntoBytes,
+        zerocopy::TryFromBytes,
+        zerocopy::Unaligned
+    )
+)]
 enum NonMaxU8Internal {
     V0 = 0,
     V1 = 1,
@@ -1459,5 +1487,19 @@ mod internal_tests {
             NonMaxU64::MAX_UNDERLYING
         );
         assert_eq!(max, NonMaxU64Le::MAX);
+    }
+}
+
+#[cfg(any(test, doc))]
+#[cfg(feature = "zerocopy")]
+mod zerocopy_test {
+    pub use super::*;
+    use zerocopy::IntoBytes;
+
+    fn is_into_bytes<T: IntoBytes>() {}
+
+    #[test]
+    fn non_max_u8_internal_is_into_bytes() {
+        is_into_bytes::<NonMaxU8Internal>();
     }
 }

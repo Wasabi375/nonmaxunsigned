@@ -18,9 +18,11 @@ default = ["checked-ops"]
 checked-ops = []
 endian-conversion = []
 bytemuck = ["dep:bytemuck"]
+zerocopy = ["dep:zerocopy"]
 
 [dependencies]
 bytemuck = { version = "1.25", optional = true }
+zerocopy = { version = "0.8.63", features = ["derive"], optional = true }
 
 [dev-dependencies]
 strum = "0.27.1"
