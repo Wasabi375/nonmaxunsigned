@@ -625,6 +625,7 @@ macro_rules! non_max_impl {
 
         impl Eq for $type {}
 
+        #[allow(clippy::non_canonical_partial_ord_impl)]
         impl PartialOrd for $type {
             fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
                 Some(self.get().cmp(&other.get()))
