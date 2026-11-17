@@ -706,9 +706,9 @@ macro_rules! non_max_impl {
             }
         }
 
-        impl Into<$primitive> for $type {
-            fn into(self) -> $primitive {
-                self.get()
+        impl From<$type> for $primitive {
+            fn from(value: $type) -> $primitive {
+                value.get()
             }
         }
 

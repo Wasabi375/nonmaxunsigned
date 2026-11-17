@@ -19,13 +19,11 @@ This crate is usable in a `no-std` environment.
 ```rust
 use nonmaxunsigned::NonMaxU8;
 
-fn main() {
-    let a = NonMaxU8::new(5).unwrap();
-    let b = NonMaxU8::new(12).unwrap();
+let a = NonMaxU8::new(5).unwrap();
+let b = NonMaxU8::new(12).unwrap();
 
-    assert_eq!(NonMaxU8::new(17).unwrap(), a + b);
-    assert_eq!(None, NonMaxU8::new(u8::MAX));
-}
+assert_eq!(NonMaxU8::new(17).unwrap(), a + b);
+assert_eq!(None, NonMaxU8::new(u8::MAX));
 ```
 
 ## Maximum Value
