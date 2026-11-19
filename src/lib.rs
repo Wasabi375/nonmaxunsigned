@@ -22,10 +22,10 @@ macro_rules! gen_doc {
 }
 
 macro_rules! nonmax_struct {
-    ($endian:literal $type:ident, $primitive:ty, $inner:tt) => {
+    ($endian:literal $type:ident, $primitive:ty, align($align:literal), $inner:tt) => {
         gen_doc!($endian $type, $primitive, true,
             #[derive(Clone, Copy)]
-            #[repr(C)]
+            #[repr(C, align($align))]
             #[allow(dead_code)]
             #[cfg(any(target_endian = $endian, feature = "endian-conversion"))]
             #[cfg_attr(
@@ -92,13 +92,13 @@ gen_doc!("native" NonMaxU64, u64, false,
     pub type NonMaxU64 = NonMaxU64Be;
 );
 
-nonmax_struct!("little" NonMaxU16Le, u16, (u8, NonMaxU8));
-nonmax_struct!("little" NonMaxU32Le, u32, ([u8; 3], NonMaxU8));
-nonmax_struct!("little" NonMaxU64Le, u64, ([u8; 7], NonMaxU8));
+nonmax_struct!("little" NonMaxU16Le, u16, align(2), (u8, NonMaxU8));
+nonmax_struct!("little" NonMaxU32Le, u32, align(4),  ([u8; 3], NonMaxU8));
+nonmax_struct!("little" NonMaxU64Le, u64, align(8), ([u8; 7], NonMaxU8));
 
-nonmax_struct!("big" NonMaxU16Be, u16, (NonMaxU8, u8));
-nonmax_struct!("big" NonMaxU32Be, u32, (NonMaxU8, [u8; 3]));
-nonmax_struct!("big" NonMaxU64Be, u64, (NonMaxU8, [u8; 7]));
+nonmax_struct!("big" NonMaxU16Be, u16, align(2), (NonMaxU8, u8));
+nonmax_struct!("big" NonMaxU32Be, u32, align(4), (NonMaxU8, [u8; 3]));
+nonmax_struct!("big" NonMaxU64Be, u64, align(8), (NonMaxU8, [u8; 7]));
 
 // NOTE: copy past from rust-lang: https://github.com/rust-lang/rust/blob/ab68b0fb26485ab1fa6977b2d8b59cc8a171c4aa/library/core/src/internal_macros.rs
 macro_rules! forward_ref_binop {

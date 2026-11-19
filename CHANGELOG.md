@@ -2,6 +2,10 @@
 
 ## [Unreleased] - ReleaseDate
 
+## Breaking Changes
+
+* introduce alignment requirments:
+  
 ## [2.1.0] - 2026-11-17
 
 ## Added
